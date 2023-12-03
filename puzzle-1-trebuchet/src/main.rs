@@ -13,17 +13,22 @@ fn main() {
 
         let mut number = String::new();
 
-        for (i, c) in chars_in_line.clone().enumerate() {
-            dict.iter().enumerate().for_each(|(int, word)| {
-                if line[0..i].contains(word) {
-                    number = String::from(format!("{}", int));
-                } else if c.is_numeric() {
-                    number = String::from(format!("{}", c));
-                }
-            })
-        }
+        let left = chars_in_line
+            .clone()
+            .enumerate()
+            .filter(|(idx, c)| c.is_numeric() || idx == &chars_in_line.clone().count())
+            .map(|(idx, _)| idx)
+            .collect::<Vec<usize>>()[0];
 
-        for (i, c) in chars_in_line.clone().rev().enumerate() {
+        let right = chars_in_line
+            .clone()
+            .rev()
+            .enumerate()
+            .filter(|(idx, c)| c.is_numeric() || idx == &chars_in_line.clone().count())
+            .map(|(idx, _)| idx)
+            .collect::<Vec<usize>>()[0];
+
+        for (i, c) in chars_in_line.clone().enumerate() {
             dict.iter().enumerate().for_each(|(int, word)| {
                 if line[0..i].contains(word) {
                     number = String::from(format!("{}", int));
