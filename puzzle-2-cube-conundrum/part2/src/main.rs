@@ -1,7 +1,7 @@
 fn main() {
     println!(
         "{:?}",
-        include_str!("../control.txt")
+        include_str!("../input.txt")
             .trim()
             .split("\n")
             .map(|line| line.split(":").nth(1).unwrap().split(";").fold(
