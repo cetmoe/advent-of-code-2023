@@ -1,18 +1,14 @@
 use std::cmp::max;
+use std::cmp::min;
 use std::str::Chars;
 
 fn main() {
     let input = include_str!("../control.txt").trim();
 
-    let x = input.split("\n").nth(0).unwrap().trim().len();
-    let y = input.split("\n").count();
-
-    println!("{} {}", x, y);
-
     let matrix = input
         .split("\n")
-        .map(|line| line.trim().chars())
-        .collect::<Vec<Chars>>();
+        .map(|line| line.trim().chars().collect::<Vec<char>>())
+        .collect::<Vec<Vec<char>>>();
 
     let valid_numbers = input
         .split("\n")
@@ -33,10 +29,10 @@ fn main() {
                         .parse::<usize>()
                         .unwrap();
 
-                    println!("{:?}", number_representation);
-
-                    valid_numbers_on_line.push(number_representation);
-                    it.nth(string_representation_of_number.len());
+                    if is_number_valid(i, linenr, string_representation_of_number.len(), &matrix) {
+                        valid_numbers_on_line.push(number_representation);
+                    }
+                    it.nth(string_representation_of_number.len() - 1);
                     continue;
                 }
             }
@@ -44,22 +40,31 @@ fn main() {
             valid_numbers_on_line
         })
         .flatten()
-        .collect::<Vec<usize>>();
+        .sum::<usize>();
 
     println!("{:?}", valid_numbers);
 }
 
-fn is_number_valid(x: usize, y: usize, len: usize, matrix: Vec<Chars>) -> bool {
-    let upper_region: usize = sub_usize(y, 1);
-    let bottom_region = max(y + 1, matrix.len());
-    let left_region = sub_usize(x, 1);
-    let right_region = max(x + 1, matrix.get(0).unwrap().clone().count());
+fn is_number_valid(x: usize, y: usize, len: usize, matrix: &Vec<Vec<char>>) -> bool {
+    let mut result = false;
 
-    true
+    for i in sub_usize(y, 1)..(y + 2) {
+        for j in sub_usize(x, 1)..(x + len + 1) {
+            if let Some(row) = matrix.get(i) {
+                if let Some(item) = row.get(j) {
+                    if item != &'.' && !item.is_numeric() {
+                        result = true;
+                    }
+                }
+            }
+        }
+    }
+
+    result
 }
 
 fn sub_usize(n: usize, s: usize) -> usize {
-    if n >= s {
+    if n > s {
         n - s
     } else {
         0
