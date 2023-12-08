@@ -3,7 +3,7 @@ use std::cmp::min;
 use std::str::Chars;
 
 fn main() {
-    let input = include_str!("../control.txt").trim();
+    let input = include_str!("../input.txt").trim();
 
     let matrix = input
         .split("\n")

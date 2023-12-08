@@ -1,5 +1,5 @@
 fn main() {
-    let input = include_str!("../control.txt").trim();
+    let input = include_str!("../input.txt").trim();
 
     let matrix = input
         .split("\n")
@@ -34,7 +34,7 @@ fn main() {
                                     left.push_str(right.as_str());
                                     collection.push(left.clone());
 
-                                    it.nth(right.len());
+                                    it.nth(right.len() - 1);
                                 }
                             }
                         }
