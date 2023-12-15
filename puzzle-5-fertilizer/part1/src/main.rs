@@ -1,5 +1,7 @@
+use itertools::Itertools;
+
 fn main() {
-    let mut it = include_str!("../control.txt").trim().split("\n");
+    let mut it = include_str!("../input.txt").trim().split("\n");
 
     let mut initial_seeds: Vec<usize> = Vec::new();
     let mut translation: Vec<usize> = Vec::new();
@@ -11,31 +13,36 @@ fn main() {
                     .split(":")
                     .nth(1)
                     .unwrap()
-                    .trim()
-                    .split(" ")
+                    .split_ascii_whitespace()
                     .for_each(|seed| {
-                        let number = seed.parse::<usize>().unwrap();
-                        initial_seeds.push(number);
+                        initial_seeds.push(seed.parse::<usize>().unwrap());
                     });
-
                 translation = initial_seeds.clone();
             }
-            seed_to_soil if seed_to_soil.contains("seed-to-soil") => {
-                it.clone()
+            seed_to_soil if seed_to_soil.contains(":") => {
+                let ranges = it
+                    .clone()
                     .take_while(|line| !line.is_empty())
-                    .for_each(|line| {
-                        let numbers = line
-                            .split(" ")
+                    .map(|line| {
+                        line.split_ascii_whitespace()
                             .map(|i| i.parse::<usize>().unwrap())
-                            .collect::<Vec<usize>>();
+                            .next_tuple::<(usize, usize, usize)>()
+                            .unwrap()
+                    })
+                    .collect_vec();
 
-                        println!("{:?}", numbers);
-                        // initial_seeds.iter().for_each(||);
-                    });
+                translation.iter_mut().for_each(|s| {
+                    for (dest, source, range) in ranges.iter() {
+                        if (source..&(source + range)).contains(&&s.clone()) {
+                            *s = (*s - source) + dest;
+                            break;
+                        }
+                    }
+                })
             }
             _ => {}
         }
     }
 
-    println!("{:?}", initial_seeds);
+    println!("{:?}", translation.iter().min().unwrap())
 }
