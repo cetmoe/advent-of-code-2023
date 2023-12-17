@@ -1,12 +1,11 @@
 use itertools::Itertools;
-use std::ops::Range;
+use std::{cmp, ops::Range};
 
 fn main() {
-    let mut it = include_str!("../control.txt").trim().split("\n");
+    let mut it = include_str!("../input.txt").trim().split("\n");
 
-    let mut initial_seed_ranges: Vec<Range<usize>> = Vec::new();
-    let mut translation_seed_ranges: Vec<Vec<(Range<usize>, Range<usize>)>> = Vec::new();
-    let mut revised_seeds: Vec<usize> = Vec::new();
+    let mut seed_intervals: Vec<(isize, isize)> = Vec::new();
+    let mut input_maps: Vec<Vec<(isize, isize, isize)>> = Vec::new();
 
     while let Some(line) = it.next() {
         match line {
@@ -16,13 +15,13 @@ fn main() {
                     .nth(1)
                     .unwrap()
                     .split_ascii_whitespace()
-                    .map(|seed| seed.parse::<usize>().unwrap())
+                    .map(|seed| seed.parse::<isize>().unwrap())
                     .enumerate();
 
                 while let Some((ind, seed_start)) = it.next() {
                     if ind % 2 == 0 {
                         let (_, seed_offset) = it.next().unwrap();
-                        initial_seed_ranges.push(seed_start..(seed_start + seed_offset));
+                        seed_intervals.push((seed_start, seed_start + seed_offset - 1));
                     }
                 }
             }
@@ -31,112 +30,52 @@ fn main() {
                     .clone()
                     .take_while(|line| !line.is_empty())
                     .map(|line| {
-                        let (dest, source, offset) = line
-                            .split_ascii_whitespace()
-                            .map(|i| i.parse::<usize>().unwrap())
-                            .next_tuple::<(usize, usize, usize)>()
-                            .unwrap();
-
-                        ((source..(source + offset)), (dest..(dest + offset)))
+                        line.split_ascii_whitespace()
+                            .map(|i| i.parse::<isize>().unwrap())
+                            .next_tuple::<(isize, isize, isize)>()
+                            .unwrap()
                     })
                     .collect_vec();
-                translation_seed_ranges.push(ranges);
+                input_maps.push(ranges);
             }
 
             _ => {}
         }
     }
-    let mut translations: Vec<(Range<usize>, Range<usize>)> =
-        translation_seed_ranges.get(0).unwrap().to_vec();
 
-    println!("{:?}", translations);
+    println!("{:?}", seed_intervals);
 
-    let mut trans_it = translation_seed_ranges.iter().skip(1);
+    for mappings in input_maps {
+        let mut images: Vec<(isize, isize)> = Vec::new();
+        while !seed_intervals.is_empty() {
+            let (x, y) = seed_intervals.pop().unwrap();
+            let mut completed = true;
+            for (a, b, delta) in &mappings {
+                let c = b + delta - 1;
+                let t = b - a;
 
-    while let Some(search_space) = trans_it.next() {
-        println!("line");
-        let mut temp: Vec<(Range<usize>, Range<usize>)> = Vec::new();
-        let mut temp_unsolved: Vec<(Range<usize>, Range<usize>)> = Vec::new();
-        for (trans_src, trans_dest) in search_space.iter() {
-            println!("{:?}", (trans_src, trans_dest));
-            for (init_src, init_dest) in &translations {
-                if init_dest.contains(&trans_src.start) && init_dest.contains(&trans_src.end) {
-                    let fst = trans_src.start - init_dest.start;
-                    if fst > 0 {
-                        temp.push((
-                            init_src.start..(init_src.start + fst),
-                            init_dest.start..(init_dest.start + fst),
-                        ));
-                    }
-                    let snd = trans_src.end - trans_src.start;
-                    temp.push((
-                        (init_src.start + fst)..(init_src.start + fst + snd),
-                        trans_dest.start..trans_dest.end,
-                    ));
-                    let thd = init_dest.end - trans_src.end;
-                    if thd > 0 {
-                        temp.push((
-                            (init_src.start + fst + snd)..(init_src.start + fst + snd + thd),
-                            (init_dest.start + fst + snd)..(init_dest.start + fst + snd + thd),
-                        ));
-                    }
-                } else if init_dest.contains(&trans_src.start)
-                    && !init_dest.contains(&trans_src.end)
-                {
-                    let fst = trans_src.start - init_dest.start;
-                    if fst > 0 {
-                        temp.push((
-                            init_src.start..(init_src.start + fst),
-                            init_dest.start..(init_src.start + fst),
-                        ))
-                    }
-                    let snd = init_dest.end - trans_src.start;
-                    if snd > 0 {
-                        temp.push((
-                            (init_src.start + fst)..(init_src.start + fst + snd),
-                            trans_dest.start..(trans_dest.start + snd),
-                        ))
-                    }
-                    let thd = trans_dest.end - snd;
-                    temp_unsolved.push((
-                        init_src.end..trans_src.end,
-                        (trans_dest.start + thd)..trans_dest.end,
-                    ))
-                } else if !init_dest.contains(&trans_src.start)
-                    && init_dest.contains(&trans_src.end)
-                {
-                    let fst = init_dest.start - trans_src.start;
-                    temp_unsolved.push((
-                        trans_src.start..init_dest.start,
-                        trans_dest.start..(trans_dest.start + fst),
-                    ));
-
-                    let snd = trans_src.end - init_src.start;
-                    if snd > 0 {
-                        temp.push((
-                            init_src.start..(init_src.start + snd),
-                            (trans_dest.start + fst)..(trans_dest.start + fst + snd),
-                        ))
-                    }
-                    temp.push((
-                        (init_src.start + snd)..(init_src.end),
-                        (init_dest.start + snd)..(init_dest.end),
-                    ))
+                if b <= &x && x <= y && y <= c {
+                    images.push((x - t, y - t));
+                    completed = false;
+                    break;
+                } else if b <= &x && x <= c && c < y {
+                    images.push((x - t, c - t));
+                    seed_intervals.push((c + 1, y));
+                    completed = false;
+                    break;
+                } else if &x < b && b <= &y && y <= c {
+                    images.push((b - t, y - t));
+                    seed_intervals.push((x, b - 1));
+                    completed = false;
+                    break;
                 }
             }
-        }
-        temp = temp.clone().into_iter().unique().collect_vec();
-        for (unsolved_src, unsolved_dest) in &temp_unsolved {
-            for (temp_src, temp_dest) in &temp {
-                if unsolved_src.contains(&temp_dest.start) || unsolved_src.contains(&temp_dest.end)
-                {
-                }
+            if completed {
+                images.push((x, y));
             }
         }
-
-        // translations = temp.clone().into_iter().unique().collect_vec();
-
-        println!("{:?}", temp_unsolved);
-        println!("{:?}", temp);
+        seed_intervals = images.clone();
     }
+
+    println!("{:?}", seed_intervals.iter().min().unwrap());
 }
