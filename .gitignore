@@ -12,3 +12,7 @@
 
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
+
+**/input.txt
+**/input2.txt
+**/input3.txt
